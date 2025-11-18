@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Redacción: Crisis</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --accent-color: #c5a059; /* Dorado antiguo para los 70 */
+            --fail-color: #ff4444;
+            --font-main: 'Courier New', Courier, monospace;
+            --panel-bg: #2b2b2b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 1.5s, color 1.5s;
+        }
+
+        /* Estilos Era Moderna (2010+) */
+        body.era-modern {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --accent-color: #d60000; /* Rojo Crisis */
+            --fail-color: #d60000;
+            --font-main: 'Arial', sans-serif;
+            --panel-bg: #f4f4f4;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--panel-bg);
+            padding: 40px;
+            border-left: 6px solid var(--accent-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 1s;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--text-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin-top: 0;
+            font-size: 1.8em;
+        }
+
+        p {
+            line-height: 1.6;
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        .narrative-context {
+            font-style: italic;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        /* Botones de decisión */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .choice-btn {
+            background: transparent;
+            border: 1px solid var(--text-color);
+            color: inherit;
+            padding: 15px 20px;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .choice-btn:hover:not(:disabled) {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            border-color: var(--accent-color);
+        }
+
+        .choice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Feedback y Continuar */
+        #feedback-area {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none; 
+            font-weight: bold;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .next-btn {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 15px;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.1em;
+            display: none; 
+        }
+        
+        .next-btn:hover { opacity: 0.9; }
+
+        /* Pantalla negra de transición */
+        #transition-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s;
+        }
+        
+        .thanks-msg {
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: var(--accent-color);
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Estilo para el Game Over */
+        .game-over-title {
+            color: var(--fail-color) !important;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--fail-color);
+        }
+        
+        .game-over-reason {
+            font-weight: bold; 
+            color: var(--fail-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="transition-overlay">
+        <h1 id="trans-year">1976</h1>
+        <p id="trans-msg">Silencio de radio...</p>
+    </div>
+
+    <div id="game-container">
+        <div class="header-info">
+            <span id="date-display">MAYO 1973</span>
+            <span id="context-display">ETAPA 1</span>
+        </div>
+
+        <div id="content-area">
+            <h1>SALA DE REDACCIÓN: CRISIS</h1>
+            <p class="narrative-context">Bienvenido. Sos el editor responsable en dos momentos históricos clave.</p>
+            <p>Tu objetivo es sobrevivir. Cada decisión cuenta: si traicionás el espíritu de la revista, perdés a los lectores. Si te enfrentás al poder sin inteligencia, te clausuran.</p>
+            <button class="choice-btn" onclick="startGame()" style="text-align: center; width:100%">INICIAR EDICIÓN</button>
+        </div>
+
+        <div id="feedback-area"></div>
+        <button id="btn-continue" class="next-btn" onclick="nextStep()">CONTINUAR</button>
+    </div>
+
+<script>
+    // --- DATOS DEL JUEGO ---
+    
+    // 1973-1976
+    const era1 = [
+        {
+            date: "MAYO 1973",
+            title: "DEFINIENDO LA VOZ",
+            text: "La redacción huele a tabaco y tinta. Cerramos el primer número. Galeano espera tu decisión para las páginas centrales. ¿Qué texto define nuestro compromiso?",
+            options: [
+                {
+                    label: "Un ensayo académico complejo de un catedrático de la UBA.",
+                    correct: false,
+                    failTitle: "CRISIS DE IDENTIDAD",
+                    failText: "La revista sale a la calle y nadie la entiende. Al hablar en difícil, le hiciste el juego a la élite y la militancia te abandona.",
+                    academic: '"La revista se propuso hablarle a un público amplio" y romper con la cultura elitista.'
+                },
+                {
+                    label: "Un testimonio directo de un obrero, respetando su oralidad.",
+                    correct: true,
+                    reply: 'Correcto. "El género testimonial permitió desplazar la voz autoral hacia los protagonistas marginados de la historia".'
+                }
+            ]
+        },
+        {
+            date: "AGOSTO 1974",
+            title: "LA IMAGEN EN DISPUTA",
+            text: "El diseño visual es clave. Un colaborador sugiere poner fotos documentales en la tapa. Hermenegildo Sábat propone, en cambio, una caricatura satírica.",
+            options: [
+                {
+                    label: "Usar fotografías. Hay que documentar la realidad.",
+                    correct: false,
+                    failTitle: "ERROR ESTÉTICO",
+                    failText: "La tapa se ve igual a la de cualquier revista. Perdiste la identidad visual. Al intentar ser 'realistas', perdimos la capacidad de subvertir.",
+                    academic: '"La revista no incorporó la fotografía hasta su etapa más reciente; el diseño reforzaba una estética de la liberación".'
+                },
+                {
+                    label: "Usar la ilustración de Sábat.",
+                    correct: true,
+                    reply: 'Exacto. "El humor operaba como una línea de subversión y desmitificación de la realidad".'
+                }
+            ]
+        },
+        {
+            date: "MARZO 1976",
+            title: "LA HORA DE LA VERDAD",
+            text: "Golpe de Estado. La dictadura exige 'Lectura Previa'. Un oficial quiere leer los borradores antes de imprimir. ¿Qué hacés?",
+            options: [
+                {
+                    label: "Aceptar la censura para seguir publicando.",
+                    correct: false,
+                    failTitle: "COMPLICIDAD",
+                    failText: "La revista sale, pero está muerta por dentro. Sin opinión, sin garra. Nos convertimos en cómplices del silencio.",
+                    academic: '"La lectura previa de la dictadura atentaba directamente contra la revista al prohibir la difusión de opiniones no especializadas".'
+                },
+                {
+                    label: "Cerrar la revista. Mejor el silencio que la complicidad.",
+                    correct: true,
+                    reply: 'Decisión ética. "La autocensura volvía inviable el desarrollo de un proyecto editorial regido por consignas opuestas a las del régimen".'
+                }
+            ]
+        }
+    ];
+
+    // 2010-Actualidad
+    const era2 = [
+        {
+            date: "OCTUBRE 2010",
+            title: "LA REIMPRESIÓN",
+            text: "Crisis vuelve tras el 2001. ¿Quién firma la editorial de este regreso histórico?",
+            options: [
+                {
+                    label: "Un director ejecutivo, manteniendo la jerarquía tradicional.",
+                    correct: false,
+                    failTitle: "ANACRONISMO",
+                    failText: "La redacción se vuelve verticalista y pierde la mística del 2001. No logramos captar la efervescencia social. Perdimos la frescura de la 'revuelta'.",
+                    academic: '"Esta etapa se funda desde una voz marcada por la irrupción del protagonismo popular durante la crisis de 2001".'
+                },
+                {
+                    label: "Un Colectivo Editorial, firmando como grupo.",
+                    correct: true,
+                    reply: 'Correcto. "Se publican con el propósito de definir una forma contemporánea de experimentación de lo colectivo".'
+                }
+            ]
+        },
+        {
+            date: "NOVIEMBRE 2025",
+            title: "LA TRAMPA DEL ALGORITMO",
+            text: "Un tema explota en redes. Todos suben notas basura para ganar clics. ¿Qué hacemos?",
+            options: [
+                {
+                    label: "Publicar rápido una nota de opinión para ganar tráfico.",
+                    correct: false,
+                    failTitle: "OPINOLOGÍA BARATA",
+                    failText: "Ganamos miles de likes, pero perdimos el respeto. Nos convertimos en una fábrica de humo digital. Caímos en la 'lógica del recorte' y el clickbait.",
+                    academic: '"Crisis rechaza la lógica de la opinología que domina las redes sociales y se niega a producir contenido con títulos cebadores".'
+                },
+                {
+                    label: "Ignorar la velocidad y preparar un análisis profundo.",
+                    correct: true,
+                    reply: 'Bien. "La revista adopta una posición deliberadamente anacrónica que resiste a la velocidad del presente mediante investigación rigurosa".'
+                }
+            ]
+        },
+        {
+            date: "DISEÑO ACTUAL",
+            title: "NUEVAS NARRATIVAS",
+            text: "Hay que cerrar la estética del número 69. ¿Qué priorizamos?",
+            options: [
+                {
+                    label: "Incorporar fotografía de alta calidad y ensayos visuales.",
+                    correct: true,
+                    reply: 'Correcto. "Hoy la imagen fotográfica es un recurso expresivo central, a diferencia de los años 70, e incluye ensayos fotográficos".'
+                },
+                {
+                    label: "Volver al blanco y negro estricto por nostalgia.",
+                    correct: false,
+                    failTitle: "MUSEO DE PAPEL",
+                    failText: "La revista parece una pieza de museo. Quedamos atrapados en la melancolía de los 70 y no le hablamos al presente.",
+                    academic: '"La etapa contemporánea incorporó la presencia de una página web, junto con otros formatos digitales y visuales como la fotografía de alta calidad".'
+                }
+            ]
+        }
+    ];
+
+    // --- VARIABLES DE ESTADO ---
+    let currentEraIndex = 1; 
+    let currentQuestionIndex = 0;
+
+    // --- FUNCIONES ---
+
+    function startGame() {
+        currentEraIndex = 1;
+        currentQuestionIndex = 0;
+        loadScene();
+    }
+
+    function loadScene() {
+        const currentDataSet = currentEraIndex === 1 ? era1 : era2;
+        
+        if (currentQuestionIndex >= currentDataSet.length) {
+            if (currentEraIndex === 1) {
+                triggerTransition();
+            } else {
+                endGame();
+            }
+            return;
+        }
+
+        const data = currentDataSet[currentQuestionIndex];
+
+        document.getElementById('date-display').innerText = data.date;
+        document.getElementById('context-display').innerText = currentEraIndex === 1 ? "ETAPA 1: RESISTENCIA" : "ETAPA 2: REFLEXIÓN";
+
+        const contentDiv = document.getElementById('content-area');
+        contentDiv.innerHTML = `
+            <h1>${data.title}</h1>
+            <p>${data.text}</p>
+            <div class="options-container">
+                <button id="opt0" class="choice-btn" onclick="selectOption(0)">> ${data.options[0].label}</button>
+                <button id="opt1" class="choice-btn" onclick="selectOption(1)">> ${data.options[1].label}</button>
+            </div>
+        `;
+
+        document.getElementById('feedback-area').style.display = 'none';
+        document.getElementById('btn-continue').style.display = 'none';
+    }
+
+    function selectOption(index) {
+        const currentDataSet = currentEraIndex === 1 ? era1 : era2;
+        const data = currentDataSet[currentQuestionIndex];
+        const selected = data.options[index];
+        const correct = selected.correct;
+
+        // Desactivar todos los botones de opción para evitar errores.
+        document.querySelectorAll('#content-area .choice-btn').forEach(btn => {
+            btn.disabled = true;
+        });
+
+        const feedbackDiv = document.getElementById('feedback-area');
+        feedbackDiv.style.display = 'block';
+
+        if (correct) {
+            // ÉXITO
+            feedbackDiv.innerHTML = selected.reply;
+            feedbackDiv.style.backgroundColor = 'rgba(0, 100, 0, 0.2)';
+            feedbackDiv.style.border = '1px solid green';
+            feedbackDiv.style.color = 'inherit';
+
+            document.getElementById('btn-continue').innerText = "CONTINUAR";
+            document.getElementById('btn-continue').onclick = nextStep;
+            document.getElementById('btn-continue').style.display = 'block';
+        } else {
+            // FALLO CRÍTICO (GAME OVER)
+            triggerGameOver(selected.failTitle, selected.failText, selected.academic);
+        }
+    }
+
+    function triggerGameOver(title, text, academic) {
+        const contentDiv = document.getElementById('content-area');
+        
+        contentDiv.innerHTML = `
+            <h1 class="game-over-title">GAME OVER: ${title}</h1>
+            <p class="game-over-reason">${text}</p>
+            <p class="narrative-context" style="font-size: 0.9em; border-top: 1px solid #666; padding-top:10px;">
+                JUSTIFICACIÓN ACADÉMICA: <br> ${academic}
+            </p>
+        `;
+
+        document.getElementById('feedback-area').style.display = 'none';
+
+        const btn = document.getElementById('btn-continue');
+        btn.innerText = "INTENTAR DE NUEVO";
+        btn.style.backgroundColor = "var(--fail-color)";
+        btn.onclick = () => location.reload();
+        btn.style.display = 'block';
+    }
+
+    function nextStep() {
+        currentQuestionIndex++;
+        loadScene();
+    }
+
+    function triggerTransition() {
+        const overlay = document.getElementById('transition-overlay');
+        const transYear = document.getElementById('trans-year');
+        const transMsg = document.getElementById('trans-msg');
+
+        overlay.style.opacity = 1;
+        overlay.style.pointerEvents = 'all';
+        transYear.innerText = "2010";
+        transMsg.innerText = "Crisis vuelve a la calle.\nNuevo contexto: Hiper-digitalización y sobreinformación.";
+
+        setTimeout(() => {
+            document.body.classList.add('era-modern');
+            currentEraIndex = 2;
+            currentQuestionIndex = 0;
+            overlay.style.opacity = 0;
+            overlay.style.pointerEvents = 'none';
+            loadScene();
+        }, 3000);
+    }
+
+    function endGame() {
+        const contentDiv = document.getElementById('content-area');
+        document.getElementById('feedback-area').style.display = 'none';
+        document.getElementById('btn-continue').style.display = 'none';
+        document.getElementById('date-display').innerText = "FIN";
+        
+        contentDiv.innerHTML = `
+            <h1>¡MISIÓN CUMPLIDA!</h1>
+            <p>Has recorrido la historia de Crisis. Lograste mantener la integridad editorial frente a la violencia estatal y la presión digital.</p>
+            <p>Tu éxito demuestra que el proyecto de Crisis sigue vivo y que su historia es clave para entender la relación entre medios y sociedad en Argentina.</p>
+            <div class="thanks-msg">¡Gracias por jugar! Ahora, ¡a seguir escribiendo!</div>
+            <button class="choice-btn" onclick="location.reload()" style="text-align: center; width:100%; margin-top: 20px;">VOLVER A JUGAR</button>
+        `;
+    }
+</script>
+
+</body>
+</html>
